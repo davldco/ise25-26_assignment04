@@ -2,10 +2,10 @@ package de.seuhd.campuscoffee.api.controller;
 
 import de.seuhd.campuscoffee.api.dtos.PosDto;
 import de.seuhd.campuscoffee.api.mapper.PosDtoMapper;
+import de.seuhd.campuscoffee.domain.model.ImportResult;
 import de.seuhd.campuscoffee.domain.ports.PosService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Controller for handling POS-related API requests.
  */
-@Controller
+@RestController
 @RequestMapping("/api/pos")
 @RequiredArgsConstructor
 public class PosController {
@@ -50,13 +50,16 @@ public class PosController {
 
     @PostMapping("/import/osm/{nodeId}")
     public ResponseEntity<PosDto> create(
-            @PathVariable Long nodeId) {
-        PosDto created = posDtoMapper.fromDomain(
-                posService.importFromOsmNode(nodeId)
-        );
+            @PathVariable Long nodeId,
+            @RequestParam(name = "allowPartial", required = false, defaultValue = "false") boolean allowPartial) {
+        ImportResult result = posService.importFromOsmNode(nodeId, allowPartial);
+        // Map Pos -> PosDto and attach missingFields
+        PosDto dto = posDtoMapper.fromDomain(result.pos());
+        // create a new PosDto with missingFields set (builder available)
+        PosDto withMissing = dto.toBuilder().missingFields(result.missingFields()).build();
         return ResponseEntity
-                .created(getLocation(created.id()))
-                .body(created);
+                .created(getLocation(withMissing.id()))
+                .body(withMissing);
     }
 
     @PutMapping("/{id}")
@@ -84,13 +87,15 @@ public class PosController {
     }
 
     /**
-     * Builds the location URI for a newly created resource.
+     * Builds the canonical location URI for a newly created POS resource.
+     * Uses the application context path so the import endpoint does not produce
+     * a nested URI like `/api/pos/import/osm/{nodeId}/{id}`.
      * @param resourceId the ID of the created resource
      * @return the location URI
      */
     private URI getLocation(Long resourceId) {
-        return ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
+        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/pos/{id}")
                 .buildAndExpand(resourceId)
                 .toUri();
     }

@@ -34,10 +34,10 @@ public record Pos(
         @NonNull String description,
         @NonNull PosType type,
         @NonNull CampusType campus,
-        @NonNull String street,
-        @NonNull String houseNumber,
-        @NonNull Integer postalCode,
-        @NonNull String city
+        @Nullable String street,
+        @Nullable String houseNumber,
+        @Nullable Integer postalCode,
+        @Nullable String city
 ) implements Serializable { // serializable to allow cloning (see TestFixtures class).
     @Serial
     private static final long serialVersionUID = 1L;

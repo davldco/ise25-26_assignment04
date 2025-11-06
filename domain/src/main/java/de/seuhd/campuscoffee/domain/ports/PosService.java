@@ -5,6 +5,7 @@ import de.seuhd.campuscoffee.domain.exceptions.DuplicatePosNameException;
 import de.seuhd.campuscoffee.domain.exceptions.OsmNodeMissingFieldsException;
 import de.seuhd.campuscoffee.domain.exceptions.OsmNodeNotFoundException;
 import de.seuhd.campuscoffee.domain.exceptions.PosNotFoundException;
+import de.seuhd.campuscoffee.domain.model.ImportResult;
 import de.seuhd.campuscoffee.domain.model.Pos;
 import org.jspecify.annotations.NonNull;
 
@@ -65,23 +66,16 @@ public interface PosService {
     @NonNull Pos upsert(@NonNull Pos pos) throws PosNotFoundException, DuplicatePosNameException;
 
     /**
-     * Imports a Point of Sale from an OpenStreetMap node.
-     * Fetches POS data from OpenStreetMap using the {@link OsmDataService}, converts it to a POS entity,
-     * and saves it to the system. If a POS with the same name already exists, it will be updated.
-     * <p>
-     * The import process:
-     * <ol>
-     *   <li>Fetches the OSM node data using the provided node ID</li>
-     *   <li>Extracts relevant tags (name, address, etc.)</li>
-     *   <li>Maps OSM data to the POS domain model </li>
-     *   <li>Persists the POS entity using the upsert method</li>
-     * </ol>
-     *
-     * @param nodeId the OpenStreetMap node ID to import; must not be null
-     * @return the created or updated POS entity; never null
-     * @throws OsmNodeNotFoundException if the OSM node with the given ID doesn't exist or cannot be fetched
-     * @throws OsmNodeMissingFieldsException if the OSM node lacks required fields for creating a valid POS
-     * @throws DuplicatePosNameException if a POS with the same name already exists
+     * Imports a Point of Sale from an OpenStreetMap node and returns an ImportResult which
+     * contains the created/updated Pos and a list of missing fields (nullable) when a partial import was performed.
      */
-    @NonNull Pos importFromOsmNode(@NonNull Long nodeId) throws OsmNodeNotFoundException, OsmNodeMissingFieldsException, DuplicatePosNameException;
+    @NonNull ImportResult importFromOsmNode(@NonNull Long nodeId) throws OsmNodeNotFoundException, OsmNodeMissingFieldsException, DuplicatePosNameException;
+
+    /**
+     * Variant of {@link #importFromOsmNode(Long)} that allows partial imports when required fields are missing.
+     * If {@code allowPartial} is true, the method will create a POS with available fields and return it, and
+     * the created POS may have nulls for missing address fields. Implementations should record which fields
+     * were missing (logging or metadata) so clients can later complete the data.
+     */
+    @NonNull ImportResult importFromOsmNode(@NonNull Long nodeId, boolean allowPartial) throws OsmNodeNotFoundException, DuplicatePosNameException;
 }

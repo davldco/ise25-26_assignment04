@@ -1,4 +1,4 @@
-package de.seuhd.campuscoffee.domain.impl;
+package de.seuhd.campuscoffee.service;
 
 import de.seuhd.campuscoffee.domain.exceptions.DuplicatePosNameException;
 import de.seuhd.campuscoffee.domain.exceptions.OsmNodeMissingFieldsException;
@@ -15,6 +15,7 @@ import de.seuhd.campuscoffee.domain.ports.PosService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +23,11 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Implementation of the POS service that handles business logic related to POS entities.
- * Note: This implementation no longer registers itself as a Spring @Service - the
- * application module provides the active implementation to respect module boundaries.
+ * Application-level implementation of PosService. This class provides the Spring bean
+ * and delegates data access to the domain ports (PosDataService, OsmDataService).
  */
 @Slf4j
+@Service
 @RequiredArgsConstructor
 public class PosServiceImpl implements PosService {
     private final PosDataService posDataService;
@@ -74,17 +75,20 @@ public class PosServiceImpl implements PosService {
 
     @Override
     public @NonNull ImportResult importFromOsmNode(@NonNull Long nodeId, boolean allowPartial) throws OsmNodeNotFoundException {
-        log.info("Importing POS from OpenStreetMap node {}...", nodeId);
+        log.info("Importing POS from OpenStreetMap node {} (allowPartial={})...", nodeId, allowPartial);
 
         // Fetch the OSM node data using the port
         OsmNode osmNode = osmDataService.fetchNode(nodeId);
 
         // Convert OSM node to POS domain object and upsert it
-        var res = convertOsmNodeToPos(osmNode, allowPartial);
-        Pos savedPos = upsert(res.pos());
+        var result = convertOsmNodeToPos(osmNode, allowPartial);
+        Pos posCandidate = result.pos();
+        List<String> missing = result.missingFields();
+
+        Pos savedPos = upsert(posCandidate);
         log.info("Successfully imported POS '{}' from OSM node {}", savedPos.name(), nodeId);
 
-        return new ImportResult(savedPos, res.missingFields());
+        return new ImportResult(savedPos, missing);
     }
 
     /**

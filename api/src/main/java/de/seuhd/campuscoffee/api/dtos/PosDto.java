@@ -7,6 +7,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * DTO record for POS metadata.
@@ -20,8 +21,9 @@ public record PosDto(
         @NonNull String description,
         @NonNull PosType type,
         @NonNull CampusType campus,
-        @NonNull String street,
-        @NonNull String houseNumber,
-        @NonNull Integer postalCode,
-        @NonNull String city
+        @Nullable String street,
+        @Nullable String houseNumber,
+        @Nullable Integer postalCode,
+        @Nullable String city,
+        @Nullable List<String> missingFields // optional list of missing fields when imported partially
 ) {}

@@ -70,6 +70,30 @@ Create a POS based on an OpenStreetMap node:
 curl --request POST http://localhost:8080/api/pos/import/osm/5589879349 # set a valid OSM node ID here
 ```
 
+Beispiel — erwartete Antwort (bei Erfolg):
+
+- HTTP-Status: 201 Created
+- Location-Header: `/api/pos/{id}` (URI des neu erstellten POS)
+- Response-Body (JSON, Beispiel):
+
+```json
+{
+  "id": 42,
+  "createdAt": "2025-11-06T14:06:24.372",
+  "updatedAt": "2025-11-06T14:06:24.372",
+  "name": "Rada Coffee & Rösterei",
+  "description": "Rada Coffee & Rösterei",
+  "type": "CAFE",
+  "campus": "ALTSTADT",
+  "street": "Untere Straße",
+  "houseNumber": "21",
+  "postalCode": 69117,
+  "city": "Heidelberg"
+}
+```
+
+Hinweis: Der Import verwendet die OpenStreetMap API, um Tags wie `name`, `addr:street`, `addr:housenumber`, `addr:postcode` und `addr:city` zu lesen. Falls die OSM-Node nicht gefunden wird oder erforderliche Felder fehlen, liefert die API entsprechende Fehlercodes (z. B. 404 Not Found oder 400 Bad Request).
+
 #### Update POS
 
 Update title and description:
